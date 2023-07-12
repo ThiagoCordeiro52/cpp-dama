@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdbool.h>
 #include <vector>
 #include <stdlib.h>
@@ -443,13 +444,13 @@ int main() {
     while(is_game_on) {
         bool valid_piece = false;
         detectCaptureForTurn(board);
-        printf("Insert row for piece:");
+        std::cout << "Insert row for piece: ";
         int row;
-        scanf("%d",&row);
-        printf("\nInsert col for piece");
+        std::cin >> row;
+        std::cout << "\nInsert col for piece: ";
         int col;
-        scanf("%d",&col);
-        printf("\n");
+        std::cin >> col;
+        std::cout << std::endl;
         Movements moves = generateMoves(board, row, col);
         if(!moves.empty()) {//Wrong piece, you piece of piece
             valid_piece = true;
