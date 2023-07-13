@@ -57,9 +57,9 @@ void initializeBoard(Piece board[BOARD_SIZE][BOARD_SIZE]) {
 // Function to print the board
 void printBoard(Piece board[BOARD_SIZE][BOARD_SIZE]) {
     int i, j;
-    printf("  A B C D E F G H\n");
+    printf("  0 1 2 3 4 5 6 7\n");
     for (i = 0; i < BOARD_SIZE; i++) {
-        printf("%d ", i + 1);
+        printf("%d ", i);
         for (j = 0; j < BOARD_SIZE; j++) {
             if (board[i][j].is_void) {
                 printf("  ");
@@ -97,42 +97,34 @@ int evaluateBoard(Piece board[BOARD_SIZE][BOARD_SIZE]) {
 }
 
 bool detectCaptureForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_SIZE]) {
-	bool down = tarPie.place.row != 7;
-	bool up = tarPie.place.row != 0;
-	bool right = tarPie.place.col != 7;
-	bool left = tarPie.place.col != 0;
+	bool down = tarPie.place.row < 6;
+	bool up = tarPie.place.row > 1;
+	bool right = tarPie.place.col < 6;
+	bool left = tarPie.place.col > 1;
 	int tpr = tarPie.place.row;
 	int tpc = tarPie.place.col;
 
 	if(down && right) { //can we try down-right?
-		if(!board[tpr + 1][tpc + 1].is_void && (board[tpr + 1][tpc + 1].is_black != tarPie.is_black) && tpr+2 != 8 && tpc+2 != 8) {
-			if(board[tpr + 2][tpc + 2].is_void) {
-				return true;
-			}
+		if(!board[tpr + 1][tpc + 1].is_void && (board[tpr + 1][tpc + 1].is_black != tarPie.is_black) && board[tpr + 2][tpc + 2].is_void) {
+			return true;
 		}
 	}
 	
 	if(down && left) { //can we try down-left?
-		if(!board[tpr + 1][tpc - 1].is_void && (board[tpr + 1][tpc - 1].is_black != tarPie.is_black) && tpr+2 != 8 && tpc-2 != -1) {
-			if(board[tpr + 2][tpc - 2].is_void) {
-				return true;
-			}
+		if(!board[tpr + 1][tpc - 1].is_void && (board[tpr + 1][tpc - 1].is_black != tarPie.is_black) && board[tpr + 2][tpc - 2].is_void) {
+			return true;
 		}
 	}
 	
 	if(up && right) { //can we try up-right?
-		if(!board[tpr - 1][tpc + 1].is_void && (board[tpr - 1][tpc + 1].is_black != tarPie.is_black) && tpr-2 != -1 && tpc+2 != 8) {
-			if(board[tpr - 2][tpc + 2].is_void) {
-				return true;
-			}
+		if(!board[tpr - 1][tpc + 1].is_void && (board[tpr - 1][tpc + 1].is_black != tarPie.is_black) && board[tpr - 2][tpc + 2].is_void) {
+			return true;
 		}
 	}
 	
 	if(up && left) { //can we try up-left?
-		if(!board[tpr - 1][tpc - 1].is_void && (board[tpr - 1][tpc - 1].is_black != tarPie.is_black) && tpr-2 != -1 && tpc-2 != -1) {
-			if(board[tpr - 2][tpc - 2].is_void) {
-				return true;
-			}
+		if(!board[tpr - 1][tpc - 1].is_void && (board[tpr - 1][tpc - 1].is_black != tarPie.is_black) && board[tpr - 2][tpc - 2].is_void) {
+			return true;
 		}
 	}
 	
@@ -142,10 +134,10 @@ bool detectCaptureForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_SIZE]) {
 
 std::vector<Piece> getAllTurnPieces(Piece board[BOARD_SIZE][BOARD_SIZE]) {
 	std::vector<Piece> pieces;
-	for(int i = BOARD_SIZE; i < BOARD_SIZE; i++) {
-    	for(int j = BOARD_SIZE; j < BOARD_SIZE; j++) {
-    		if(!board[i][j].is_void && (board[i][j].is_black && is_black_turn) || (!board[i][j].is_black && !is_black_turn)) {//If there is a piece and this piece is in turn
-    			pieces.push_back(board[i][j]);
+	for(int i = 0; i < BOARD_SIZE; i++) {
+    	for(int j = 0; j < BOARD_SIZE; j++) {
+    		if(!board[i][j].is_void && ((board[i][j].is_black && is_black_turn) || (!board[i][j].is_black && !is_black_turn))) {//If there is a piece and this piece is in turn
+                pieces.push_back(board[i][j]);
     		}
         }
     }
@@ -223,7 +215,7 @@ std::vector<Piece> getAllTurnMovablePieces(Piece board[BOARD_SIZE][BOARD_SIZE]) 
 	std::vector<Piece> allP = getAllTurnPieces(board);
     std::vector<Piece> movP;
     for (Piece p : allP) {
-        if(detectCaptureForPiece(p, board) && detectMovementForPiece(p, board)) {
+        if(detectCaptureForPiece(p, board) || detectMovementForPiece(p, board)) {
             movP.push_back(p);
         }
     }
@@ -364,11 +356,9 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
 		printf("There is no piece\n");
         return moves;
 	}
-    printf("There is Piece \n");
     Piece movingPiece = board[row][col];
 
     if((movingPiece.is_black && !is_black_turn) || (!movingPiece.is_black && is_black_turn)) {
-        printf("This is not your piece\n");
         return moves;
     }
 
@@ -411,19 +401,30 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int num_pieces) {
     return best_move;
 }
 
+void movePiece1To2(Piece p1, Piece p2){
+
+}
+
 void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
     if(is_capture_possible) {//Execute capture movement
         //For now, let's consider there is only one capturable per move
-        int capR = move.front().row - move.back().row;
-        int capC = move.front().col - move.back().col;
+        int capR = (move.front().row - move.back().row)/2;
+        int capC = (move.front().col - move.back().col)/2;
         Piece transf = board[move.front().row][move.front().col]; //Get piece to move
-        board[move.back().row][move.back().col] = transf; //Put piece in its new place
+        board[move.back().row][move.back().col].is_void = false;//Register piece presence
+        board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
+        board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
         board[move.front().row][move.front().col].is_void = true; //"Remove" the piece from the place
-        board[move.front().row + capR][move.front().col + capC].is_void = true; //"Remove" the captured piece from the place
+        board[move.back().row + capR][move.back().col + capC].is_void = true; //"Remove" the captured piece from the place
+        if(detectCaptureForPiece(board[move.back().row][move.back().col], board)){
+            //For multiple captures, there will be a recursion around here, be it for player or AI
+        }
         is_capture_possible = false;//Guarantee that there is no capture
     } else {//Execute normal movement
         Piece transf = board[move.front().row][move.front().col]; //Get piece to move
-        board[move.back().row][move.back().col] = transf; //Put piece in its new place
+        board[move.back().row][move.back().col].is_void = false;//Register piece presence
+        board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
+        board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
         board[move.front().row][move.front().col].is_void = true; //"Remove" the piece from the place
     }
     //return board;
@@ -442,12 +443,9 @@ int main() {
     is_game_on = true;
     while(is_game_on) {
         bool valid_piece = false;
-        detectCaptureForTurn(board);
-        printf("Insert row for piece:");
-        int row;
+        printf("Insert row-col for piece:");
+        int row, col;
         scanf("%d",&row);
-        printf("\nInsert col for piece");
-        int col;
         scanf("%d",&col);
         printf("\n");
         Movements moves = generateMoves(board, row, col);
@@ -458,6 +456,7 @@ int main() {
             executeMove(board, moves.front());
             is_black_turn = !is_black_turn;
         }
+        detectCaptureForTurn(board);
         printBoard(board);
     }
 
