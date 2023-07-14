@@ -362,6 +362,72 @@ Movements generateMovesForNormalPiece(Piece tarPie, Piece board[BOARD_SIZE][BOAR
     return moves;
 }
 
+Movements generateMovesForPromotedPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_SIZE]) {
+    Movements moves;
+    bool down = tarPie.place.row != 7;
+	bool up = tarPie.place.row != 0;
+	bool right = tarPie.place.col != 7;
+	bool left = tarPie.place.col != 0;
+	int tpr = tarPie.place.row;
+	int tpc = tarPie.place.col;
+
+    if(down && right) { //can we try down-right?
+        int i = 1;
+        while(tpr + i != 7 && tpc + i != 7) {
+            if(board[tpr + i][tpc + i].is_void) {
+                Movement m;
+                m.push_back(init_coord(tpr, tpc));
+                m.push_back(init_coord(tpr+i,tpc+i));
+                moves.push_back(m);
+            }
+            i++;
+        }
+    }
+
+    if(down && left) { //can we try down-left?
+        int i = 1;
+        while(tpr + i != 7 && tpc - i != 0) {
+            if(board[tpr + i][tpc - i].is_void) {
+                Movement m;
+                m.push_back(init_coord(tpr, tpc));
+                m.push_back(init_coord(tpr+i,tpc-i));
+                moves.push_back(m);
+            }
+            i++;
+        }
+    }
+
+    if(up && right) { //can we try up-right?
+        int i = 1;
+        while(tpr - i != 0 && tpc + i != 7) {
+            if(board[tpr - i][tpc + i].is_void) {
+                Movement m;
+                m.push_back(init_coord(tpr, tpc));
+                m.push_back(init_coord(tpr-i,tpc+i));
+                moves.push_back(m);
+            }
+            i++;
+        }
+    }
+    
+    if(up && left) { //can we try up-left?
+        int i = 1;
+        while(tpr - i != 0 && tpc - i != 0) {
+            if(board[tpr - i][tpc - i].is_void) {
+                Movement m;
+                m.push_back(init_coord(tpr, tpc));
+                m.push_back(init_coord(tpr-i,tpc-i));
+                moves.push_back(m);
+            }
+            i++;
+        }
+        
+    }
+
+	
+    return moves;
+}
+
 // Function to generate all possible moves for a given piece
 Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
     Movements moves;
@@ -447,6 +513,10 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
                 Movement best = findBestMove(board, num_pieces, moves);
                 executeMove(board, best);
             }
+        } else { //There is no more capture, try to verify if it can be promoted
+            if((board[move.back().row][move.back().col].is_black && move.back().row == 7) || (!board[move.back().row][move.back().col].is_black && move.back().row == 0) ) {
+                board[move.back().row][move.back().col].is_promoted = true;
+            }
         }
         is_capture_possible = false;//Guarantee that there is no capture
     } else {//Execute normal movement
@@ -455,8 +525,11 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
         board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
         board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
         board[move.front().row][move.front().col].is_void = true; //"Remove" the piece from the place
+        //Now see if there is promotion
+        if((board[move.back().row][move.back().col].is_black && move.back().row == 7) || (!board[move.back().row][move.back().col].is_black && move.back().row == 0) ) {
+            board[move.back().row][move.back().col].is_promoted = true;
+        }
     }
-    //return board;
     
 }
 
