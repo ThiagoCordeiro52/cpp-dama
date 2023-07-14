@@ -3,18 +3,27 @@
 #include <vector>
 #include <stdlib.h>
 #include <time.h>
+#include <algorithm>
 
 #define BOARD_SIZE 8
 bool is_player_black;
 bool is_capture_possible;
 bool is_black_turn;
 bool is_game_on;
+int num_pieces;
 
 //Struct to represent a Coord
-typedef struct {
+struct Coord{
 	int row;
 	int col;
-} Coord;
+    bool operator==(const Coord& other) const;
+};
+
+// ...
+
+bool Coord::operator==(const Coord& other) const {
+    return row == other.row && col == other.col;
+}
 
 Coord init_coord(int r, int c) {
     Coord co;
@@ -215,7 +224,11 @@ std::vector<Piece> getAllTurnMovablePieces(Piece board[BOARD_SIZE][BOARD_SIZE]) 
 	std::vector<Piece> allP = getAllTurnPieces(board);
     std::vector<Piece> movP;
     for (Piece p : allP) {
-        if(detectCaptureForPiece(p, board) || detectMovementForPiece(p, board)) {
+        if(is_capture_possible){
+            if(detectCaptureForPiece(p, board)) {
+                movP.push_back(p);
+            }
+        } else if(detectMovementForPiece(p, board)) {
             movP.push_back(p);
         }
     }
@@ -231,7 +244,7 @@ std::vector<Piece> getXRandomTurnMovablePieces(int x, Piece board[BOARD_SIZE][BO
 }
 
 void detectCaptureForTurn(Piece board[BOARD_SIZE][BOARD_SIZE]) {
-	std::vector<Piece> pieces = getAllTurnMovablePieces(board);
+	std::vector<Piece> pieces = getAllTurnPieces(board);
 	for(Piece p : pieces) {
 		if(detectCaptureForPiece(p, board)) {
 			is_capture_possible = true;
@@ -359,17 +372,18 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
     Piece movingPiece = board[row][col];
 
     if((movingPiece.is_black && !is_black_turn) || (!movingPiece.is_black && is_black_turn)) {
+        printf("This piece isn't yours\n");
         return moves;
     }
 
 	if(is_capture_possible && detectCaptureForPiece(movingPiece, board)) { //If there is capture, only try to capture
 		printf("Capturing a piece\n");
         return generateCapturesForPiece(movingPiece, board);
-	} else if(detectMovementForPiece(movingPiece, board)) { //If there is no capture, no need to endure
+	} else if(!is_capture_possible && detectMovementForPiece(movingPiece, board)) { //If there is no capture, no need to endure
          if(movingPiece.is_promoted) {
              //moves for promoted
          } else {
-             printf("Just moving a normal piece\n");
+             printf("Just getting a normal piece moves\n");
              return generateMovesForNormalPiece(movingPiece, board);
          }
 	} else { //Select another piece
@@ -389,20 +403,16 @@ int minimax(Piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool is_maximizing_p
 }
 
 // Function to find the best move using the Minimax algorithm with alpha-beta pruning
-Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int num_pieces) {
+Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements moves) {
     Movement best_move;
     int i;
     int max_eval = -9999;
     int alpha = -9999;
     int beta = 9999;
-    // TODO: Select 'num_pieces' random computer pieces
+    // TODO: Select 'dept' depth
     // TODO: Generate moves for each selected piece and evaluate them using the minimax algorithm
     // Keep track of the best move with the highest evaluation score
-    return best_move;
-}
-
-void movePiece1To2(Piece p1, Piece p2){
-
+    return best_move = moves.front(); //FOr now, get the first for testing porpuses
 }
 
 void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
@@ -418,6 +428,25 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
         board[move.back().row + capR][move.back().col + capC].is_void = true; //"Remove" the captured piece from the place
         if(detectCaptureForPiece(board[move.back().row][move.back().col], board)){
             //For multiple captures, there will be a recursion around here, be it for player or AI
+            Movements moves = generateCapturesForPiece(board[move.back().row][move.back().col],board);
+            if(is_black_turn == is_player_black) {//It's player
+                Movement mTry;
+                mTry.push_back(move.back());
+                int row, col;
+                printf("Insert row-col for movement:");
+                scanf("%d",&row); //Hard-coded
+                scanf("%d",&col); //Hard-coded
+                printf("\n");
+                mTry.push_back(init_coord(row, col));
+                if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
+                    executeMove(board, mTry);
+                } else {
+                    printf("Wrong move, try to capture again"); //How do i go back to the cap again point?
+                }
+            } else { //AI time to shine
+                Movement best = findBestMove(board, num_pieces, moves);
+                executeMove(board, best);
+            }
         }
         is_capture_possible = false;//Guarantee that there is no capture
     } else {//Execute normal movement
@@ -431,6 +460,9 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
     
 }
 
+int pW = 0;
+int mW = 0;
+
 int main() {
     Piece board[BOARD_SIZE][BOARD_SIZE];
     srand (time(NULL)); //Initialize with random seed every start
@@ -439,31 +471,59 @@ int main() {
     is_black_turn = true;
     is_capture_possible = false;
     is_player_black = false; //Hard-coded
-	int num_pieces = 4; //Hard-coded
+	num_pieces = 4; //Hard-coded
     is_game_on = true;
     while(is_game_on) {
-        bool valid_piece = false;
-        printf("Insert row-col for piece:");
-        int row, col;
-        scanf("%d",&row);
-        scanf("%d",&col);
-        printf("\n");
-        Movements moves = generateMoves(board, row, col);
-        if(!moves.empty()) {//Wrong piece, you piece of piece
-            valid_piece = true;
+        Movements moves;
+        if(getAllTurnMovablePieces(board).empty()) { //No movable turn this time, someone won
+            is_game_on = false;
+            if(is_black_turn == is_player_black) {
+                mW++;
+            } else {
+                pW++;
+            }
+            break;
         }
-        if(valid_piece) {
-            executeMove(board, moves.front());
+        if(is_black_turn == is_player_black) {//If it is player turn, make player requests
+            printf("Insert row-col for piece:");
+            int row, col;
+            scanf("%d",&row); //Hard-coded
+            scanf("%d",&col); //Hard-coded
+            printf("\n");
+            Movements moves = generateMoves(board, row, col);
+            if(moves.empty()) {
+                printf("Invalid piece, select another\n");
+            } else {
+                Movement mTry;
+                mTry.push_back(init_coord(row, col));
+                printf("Insert row-col for movement:");
+                scanf("%d",&row); //Hard-coded
+                scanf("%d",&col); //Hard-coded
+                printf("\n");
+                mTry.push_back(init_coord(row, col));
+                if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
+                    executeMove(board, mTry);
+                    is_black_turn = !is_black_turn;
+                } else {
+                    printf("Invalid movement, try again\n");
+                }
+            }
+        } else { //It is machine time
+            //Get machine movable pieces
+            std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, board);
+            //For each one, generate thi moves
+            for (Piece p : pieces) {
+                Movements newM = generateMoves(board, p.place.row, p.place.col);
+                moves.insert(moves.end(), newM.begin(), newM.end());
+            }
+            //Now chose da best move, mwahahaha
+            Movement best = findBestMove(board, num_pieces, moves);
+            executeMove(board, best);
             is_black_turn = !is_black_turn;
         }
         detectCaptureForTurn(board);
         printBoard(board);
     }
 
-    /* For future tests only
-    Movement best_move = findBestMove(board, num_pieces);
-    printf("Best Move: %c%d to %c%d\n", best_move[0].col + 'A', best_move[0].row + 1,
-           best_move[1].col + 'A', best_move[1].row + 1);
-    */
     return 0;
 }
