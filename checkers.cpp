@@ -210,6 +210,15 @@ std::vector<Piece> getAllTurnPieces(Piece board[BOARD_SIZE][BOARD_SIZE]) {
     		}
         }
     }
+    /*for (Piece p : pieces) {
+        if (p.is_void) {
+            printf("Wat the Fruck\n");
+        } else if(p.place.row == 2 && p.place.col == 4){
+            printf("Something before\n");
+            printBoard(board);
+            printf("Something after\n");
+        }
+    }*/
     return pieces;
 }
 
@@ -576,6 +585,7 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
     Movements moves;
 	if(board[row][col].is_void) { //No piece
 		printf("There is no piece\n");
+        printBoard(board);
         return moves;
 	}
     Piece movingPiece = board[row][col];
@@ -586,7 +596,7 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
     }
 
 	if(is_capture_possible && detectCaptureForPiece(movingPiece, board)) { //If there is capture, only try to capture
-		printf("Capturing a piece\n");
+		//printf("Capturing a piece\n");
         if(movingPiece.is_promoted) {
             return generateCapturesForPromotedPiece(movingPiece, board);
         }
@@ -595,7 +605,7 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
         if(movingPiece.is_promoted) {
             return generateMovesForPromotedPiece(movingPiece, board);
         }
-        printf("Just getting a normal piece moves\n");
+        //printf("Just getting a normal piece moves\n");
         return generateMovesForNormalPiece(movingPiece, board);
          
 	} else { //Select another piece
@@ -618,6 +628,7 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
         board[move.back().row + capR][move.back().col + capC].is_void = true; //"Remove" the captured piece from the place
         if(detectCaptureForPiece(board[move.back().row][move.back().col], board)){
             //For multiple captures, there will be a recursion around here, be it for player or AI
+            printf("lets try second move\n");
             Movements moves = generateMoves(board,move.back().row,move.back().col);
             if(!is_ai_on) {//It's player
                 Movement mTry;
@@ -628,13 +639,15 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
                 scanf("%d",&col); //Hard-coded
                 printf("\n");
                 mTry.push_back(init_coord(row, col));
-                if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
+                executeMove(board, mTry);
+                /*if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
                     executeMove(board, mTry);
                 } else {
                     printf("Wrong move, try to capture again"); //How do i go back to the cap again point?
-                }
+                }*/
             } else { //AI time to shine
-                Movement m = moves.front();
+                printf("Second move");
+                Movement m = moves.back();
                 executeMove(board, m);
             }
         } else { //There is no more capture, try to verify if it can be promoted
@@ -679,13 +692,45 @@ int evaluateMove(Movement move,Piece board[BOARD_SIZE][BOARD_SIZE]){
 Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements moves) {
     Movement best_move = moves.front();
     int i = -13;
+    bool temp = is_black_turn;
     for(Movement m : moves) {
-        int t = evaluateMove(m, board);
+        // Make a copy of the board
+        Piece copy[BOARD_SIZE][BOARD_SIZE];
+            for (int i = 0; i < BOARD_SIZE; i++) {
+                for (int j = 0; j < BOARD_SIZE; j++) {
+                copy[i][j] = board[i][j]; 
+            }
+        }
+        int t = 0;
+        if(dept > 0) {
+            executeMove(copy, m);
+            is_black_turn = !is_black_turn;
+            detectCaptureForTurn(copy);
+            Movements newMoves;
+            //Get machine movable pieces
+            std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, copy);
+            //For each one, generate thi moves
+            if(getAllTurnMovablePieces(board).empty()) {//Can't move anymore
+                if(t > i) {
+                    i = t;
+                    best_move = m;
+                }
+                return best_move;
+            }
+            for (Piece p : pieces) {
+                Movements newM = generateMoves(copy, p.place.row, p.place.col);
+                newMoves.insert(newMoves.end(), newM.begin(), newM.end());
+            }
+            t = evaluateMove(findBestMove(copy, dept-1,newMoves), copy);
+        } else {
+            t = evaluateMove(m, copy);
+        }
         if(t > i) {
             i = t;
             best_move = m;
         }
     }
+    is_black_turn = temp;
     return best_move; //For now, get the first for testing porpuses
 }
 
@@ -725,14 +770,18 @@ void ai_routine(Piece board[BOARD_SIZE][BOARD_SIZE]) {
     std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, board);
     //For each one, generate thi moves
     for (Piece p : pieces) {
+        printf("Tryna p at row-col=%i-%i\n",p.place.row, p.place.col);
         Movements newM = generateMoves(board, p.place.row, p.place.col);
         moves.insert(moves.end(), newM.begin(), newM.end());
     }
     //Now chose da best move, mwahahaha
-    Movement best = findBestMove(board, num_pieces, moves);
+    int dept = num_pieces-3;
+    Movement best = findBestMove(board, dept, moves);
+    printf("row-col=%i-%i\n",best.front().row,best.front().col);
+    printf("row-col=%i-%i\n",best.back().row,best.back().col);
     executeMove(board, best);
     is_black_turn = !is_black_turn;
-    is_ai_on = false;
+    //is_ai_on = false;
 }
 
 int main() {
@@ -740,7 +789,7 @@ int main() {
     //1689366332 -- Seed with segmentation fault- it gives invalid Piece selected, try another
     //The problem may be related to the white king, since it can capture, but maybe failed
     //To recognize this capture, or better yet, to execute it
-    srand (time(NULL)); //Initialize with random seed every start
+    srand (/*1689366332*/time(NULL)); //Initialize with random seed every start
     initializeBoard(board);
     printBoard(board);
     is_black_turn = true;
@@ -767,6 +816,6 @@ int main() {
         detectCaptureForTurn(board);
         printBoard(board);
     }
-
+    printBoard(board);
     return 0;
 }
