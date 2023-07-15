@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <algorithm>
+#include <cmath>
 
 #define BOARD_SIZE 8
 bool is_player_black;
@@ -313,6 +314,9 @@ std::vector<Piece> getAllTurnMovablePieces(Piece board[BOARD_SIZE][BOARD_SIZE]) 
 
 std::vector<Piece> getXRandomTurnMovablePieces(int x, Piece board[BOARD_SIZE][BOARD_SIZE]) {
 	std::vector<Piece> allP = getAllTurnMovablePieces(board);
+    if(allP.empty()) {
+        printf("How can no piece move\n");
+    }
 	while(allP.size() > x) {
 		allP.erase(allP.begin() + (rand() % allP.size()));
 	}
@@ -353,6 +357,18 @@ Movements generateCapturesForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_S
                 m.push_back(init_coord(tpr, tpc));
                 m.push_back(init_coord(tpr+2,tpc+2));
 				moves.push_back(m);
+                //Process for multiple catching
+                board[tpr+1][tpc+1].is_void = true; //Remove temporarely
+                Piece tempPiece = board[tpr+2][tpc+2];
+                board[tpr+2][tpc+2].is_void = board[tpr][tpc].is_void;
+                board[tpr+2][tpc+2].is_promoted = board[tpr][tpc].is_promoted;
+                board[tpr+2][tpc+2].is_black = board[tpr][tpc].is_black;
+                board[tpr][tpc].is_void = true;
+                Movements temp = generateCapturesForPiece(board[tpr+2][tpc+2], board);
+                moves.insert(moves.end(), temp.begin(), temp.end());
+                board[tpr+1][tpc+1].is_void = false; //Reactivate it
+                board[tpr][tpc].is_void = false;
+                board[tpr+2][tpc+2] = tempPiece;
 			}
 		}
 	}
@@ -364,6 +380,18 @@ Movements generateCapturesForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_S
                 m.push_back(init_coord(tpr, tpc));
                 m.push_back(init_coord(tpr+2,tpc-2));
 				moves.push_back(m);
+                //Process for multiple catching
+                board[tpr+1][tpc-1].is_void = true; //Remove temporarely
+                Piece tempPiece = board[tpr+2][tpc-2];
+                board[tpr+2][tpc-2].is_void = board[tpr][tpc].is_void;
+                board[tpr+2][tpc-2].is_promoted = board[tpr][tpc].is_promoted;
+                board[tpr+2][tpc-2].is_black = board[tpr][tpc].is_black;
+                board[tpr][tpc].is_void = true;
+                Movements temp = generateCapturesForPiece(board[tpr+2][tpc-2], board);
+                moves.insert(moves.end(), temp.begin(), temp.end());
+                board[tpr+1][tpc-1].is_void = false; //Reactivate it
+                board[tpr][tpc].is_void = false;
+                board[tpr+2][tpc-2] = tempPiece;
 			}
 		}
 	}
@@ -375,6 +403,18 @@ Movements generateCapturesForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_S
                 m.push_back(init_coord(tpr, tpc));
                 m.push_back(init_coord(tpr-2,tpc+2));
 				moves.push_back(m);
+                //Process for multiple catching
+                board[tpr-1][tpc+1].is_void = true; //Remove temporarely
+                Piece tempPiece = board[tpr-2][tpc+2];
+                board[tpr-2][tpc+2].is_void = board[tpr][tpc].is_void;
+                board[tpr-2][tpc+2].is_promoted = board[tpr][tpc].is_promoted;
+                board[tpr-2][tpc+2].is_black = board[tpr][tpc].is_black;
+                board[tpr][tpc].is_void = true;
+                Movements temp = generateCapturesForPiece(board[tpr-2][tpc+2], board);
+                moves.insert(moves.end(), temp.begin(), temp.end());
+                board[tpr-1][tpc+1].is_void = false; //Reactivate it
+                board[tpr][tpc].is_void = false;
+                board[tpr-2][tpc+2] = tempPiece;
 			}
 		}
 	}
@@ -386,6 +426,17 @@ Movements generateCapturesForPiece(Piece tarPie, Piece board[BOARD_SIZE][BOARD_S
                 m.push_back(init_coord(tpr, tpc));
                 m.push_back(init_coord(tpr-2,tpc-2));
 				moves.push_back(m);
+                board[tpr-1][tpc-1].is_void = true; //Remove temporarely
+                Piece tempPiece = board[tpr-2][tpc-2];
+                board[tpr-2][tpc-2].is_void = board[tpr][tpc].is_void;
+                board[tpr-2][tpc-2].is_promoted = board[tpr][tpc].is_promoted;
+                board[tpr-2][tpc-2].is_black = board[tpr][tpc].is_black;
+                board[tpr][tpc].is_void = true;
+                Movements temp = generateCapturesForPiece(board[tpr-2][tpc-2], board);
+                moves.insert(moves.end(), temp.begin(), temp.end());
+                board[tpr-1][tpc-1].is_void = false; //Reactivate it
+                board[tpr][tpc].is_void = false;
+                board[tpr-2][tpc-2] = tempPiece;
 			}
 		}
 	}
@@ -404,13 +455,27 @@ Movements generateCapturesForPromotedPiece(Piece tarPie, Piece board[BOARD_SIZE]
 
     if(down && right) { //can we try down-right?
         int i = 1;
-        while(tpr + i + 1 != 7 && tpc + i + 1 != 7) {
+        while(tpr + i + 1 <= 7 && tpc + i + 1 <= 7) {
             if(!board[tpr + i][tpc + i].is_void && board[tpr][tpc].is_black != board[tpr + i][tpc + i].is_black) {
-                Movement m;
-                m.push_back(init_coord(tpr, tpc));
-                m.push_back(init_coord(tpr+i,tpc+i));
-                moves.push_back(m);
-                break;
+                if(board[tpr + i + 1][tpc + i + 1].is_void) {
+                    Movement m;
+                    m.push_back(init_coord(tpr, tpc));
+                    m.push_back(init_coord(tpr+i+1,tpc+i+1));
+                    moves.push_back(m);
+                    //Process for multiple catching
+                    board[tpr+i][tpc+i].is_void = true; //Remove temporarely
+                    Piece tempPiece = board[tpr+i+1][tpc+i+1];
+                    board[tpr+i+1][tpc+i+1].is_void = board[tpr][tpc].is_void;
+                    board[tpr+i+1][tpc+i+1].is_promoted = board[tpr][tpc].is_promoted;
+                    board[tpr+i+1][tpc+i+1].is_black = board[tpr][tpc].is_black;
+                    board[tpr][tpc].is_void = true;
+                    Movements temp = generateCapturesForPiece(board[tpr+i+1][tpc+i+1], board);
+                    moves.insert(moves.end(), temp.begin(), temp.end());
+                    board[tpr+i][tpc+i].is_void = false; //Reactivate it
+                    board[tpr][tpc].is_void = false;
+                    board[tpr+i+1][tpc+i+1] = tempPiece;
+                    break;
+                }
             }
             i++;
         }
@@ -418,13 +483,27 @@ Movements generateCapturesForPromotedPiece(Piece tarPie, Piece board[BOARD_SIZE]
 
     if(down && left) { //can we try down-left?
         int i = 1;
-        while(tpr + i + 1 != 7 && tpc - i - 1 != 0) {
+        while(tpr + i + 1 <= 7 && tpc - i - 1 >= 0) {
             if(!board[tpr + i][tpc - i].is_void && board[tpr][tpc].is_black != board[tpr + i][tpc - i].is_black) {
-                Movement m;
-                m.push_back(init_coord(tpr, tpc));
-                m.push_back(init_coord(tpr+i,tpc-i));
-                moves.push_back(m);
-                break;
+                if(board[tpr + i + 1][tpc - i - 1].is_void) {
+                    Movement m;
+                    m.push_back(init_coord(tpr, tpc));
+                    m.push_back(init_coord(tpr+i+1,tpc-i-1));
+                    moves.push_back(m);
+                    //Process for multiple catching
+                    board[tpr+i][tpc-i].is_void = true; //Remove temporarely
+                    Piece tempPiece = board[tpr+i+1][tpc-i-1];
+                    board[tpr+i+1][tpc-i-1].is_void = board[tpr][tpc].is_void;
+                    board[tpr+i+1][tpc-i-1].is_promoted = board[tpr][tpc].is_promoted;
+                    board[tpr+i+1][tpc-i-1].is_black = board[tpr][tpc].is_black;
+                    board[tpr][tpc].is_void = true;
+                    Movements temp = generateCapturesForPiece(board[tpr+i+1][tpc-i-1], board);
+                    moves.insert(moves.end(), temp.begin(), temp.end());
+                    board[tpr+i][tpc-i].is_void = false; //Reactivate it
+                    board[tpr][tpc].is_void = false;
+                    board[tpr+i+1][tpc-i-1] = tempPiece;
+                    break;
+                }
             }
             i++;
         }
@@ -432,13 +511,27 @@ Movements generateCapturesForPromotedPiece(Piece tarPie, Piece board[BOARD_SIZE]
 
     if(up && right) { //can we try up-right?
         int i = 1;
-        while(tpr - i - 1 != 0 && tpc + i + 1 != 7) {
+        while(tpr - i - 1 >= 0 && tpc + i + 1 <= 7) {
             if(!board[tpr - i][tpc + i].is_void && board[tpr][tpc].is_black != board[tpr - i][tpc + i].is_black) {
-                Movement m;
-                m.push_back(init_coord(tpr, tpc));
-                m.push_back(init_coord(tpr-i,tpc+i));
-                moves.push_back(m);
-                break;
+                if(board[tpr + i - 1][tpc + i + 1].is_void) {
+                    Movement m;
+                    m.push_back(init_coord(tpr, tpc));
+                    m.push_back(init_coord(tpr-i-1,tpc+i+1));
+                    moves.push_back(m);
+                    //Process for multiple catching
+                    board[tpr-i][tpc+i].is_void = true; //Remove temporarely
+                    Piece tempPiece = board[tpr-i-1][tpc+i+1];
+                    board[tpr-i-1][tpc+i+1].is_void = board[tpr][tpc].is_void;
+                    board[tpr-i-1][tpc+i+1].is_promoted = board[tpr][tpc].is_promoted;
+                    board[tpr-i-1][tpc+i+1].is_black = board[tpr][tpc].is_black;
+                    board[tpr][tpc].is_void = true;
+                    Movements temp = generateCapturesForPiece(board[tpr+i+1][tpc+i+1], board);
+                    moves.insert(moves.end(), temp.begin(), temp.end());
+                    board[tpr-i][tpc+i].is_void = false; //Reactivate it
+                    board[tpr][tpc].is_void = false;
+                    board[tpr-i-1][tpc+i+1] = tempPiece;
+                    break;
+                }
             }
             i++;
         }
@@ -446,13 +539,27 @@ Movements generateCapturesForPromotedPiece(Piece tarPie, Piece board[BOARD_SIZE]
     
     if(up && left) { //can we try up-left?
         int i = 1;
-        while(tpr - i != 0 && tpc - i != 0) {
+        while(tpr - i - 1 >= 0 && tpc - i - 1 >= 0) {
             if(!board[tpr - i][tpc - i].is_void && board[tpr][tpc].is_black != board[tpr - i][tpc - i].is_black) {
-                Movement m;
-                m.push_back(init_coord(tpr, tpc));
-                m.push_back(init_coord(tpr-i,tpc-i));
-                moves.push_back(m);
-                break;
+                if(board[tpr + i - 1][tpc + i - 1].is_void) {
+                    Movement m;
+                    m.push_back(init_coord(tpr, tpc));
+                    m.push_back(init_coord(tpr-i-1,tpc-i-1));
+                    moves.push_back(m);
+                    //Process for multiple catching
+                    board[tpr-i][tpc-i].is_void = true; //Remove temporarely
+                    Piece tempPiece = board[tpr-i-1][tpc-i-1];
+                    board[tpr-i-1][tpc-i-1].is_void = board[tpr][tpc].is_void;
+                    board[tpr-i-1][tpc-i-1].is_promoted = board[tpr][tpc].is_promoted;
+                    board[tpr-i-1][tpc-i-1].is_black = board[tpr][tpc].is_black;
+                    board[tpr][tpc].is_void = true;
+                    Movements temp = generateCapturesForPiece(board[tpr-i-1][tpc-i-1], board);
+                    moves.insert(moves.end(), temp.begin(), temp.end());
+                    board[tpr-i][tpc-i].is_void = false; //Reactivate it
+                    board[tpr][tpc].is_void = false;
+                    board[tpr-i-1][tpc-i-1] = tempPiece;
+                    break;
+                }
             }
             i++;
         }
@@ -617,20 +724,19 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col) {
 
 void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
     if(is_capture_possible) {//Execute capture movement
-        //For now, let's consider there is only one capturable per move
-        int capR = (move.front().row - move.back().row)/2;
-        int capC = (move.front().col - move.back().col)/2;
         Piece transf = board[move.front().row][move.front().col]; //Get piece to move
-        board[move.back().row][move.back().col].is_void = false;//Register piece presence
-        board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
-        board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
         board[move.front().row][move.front().col].is_void = true; //"Remove" the piece from the place
-        board[move.back().row + capR][move.back().col + capC].is_void = true; //"Remove" the captured piece from the place
-        if(detectCaptureForPiece(board[move.back().row][move.back().col], board)){
-            //For multiple captures, there will be a recursion around here, be it for player or AI
-            printf("lets try second move\n");
-            Movements moves = generateMoves(board,move.back().row,move.back().col);
-            if(!is_ai_on) {//It's player
+        if(!is_ai_on) { //IA is off
+            int capR = (move.front().row - move[1].row)/2;
+            int capC = (move.front().col - move[1].col)/2;
+            board[move[1].row][move[1].col].is_void = false;//Register piece presence
+            board[move[1].row][move[1].col].is_black = transf.is_black; //Put piece color
+            board[move[1].row][move[1].col].is_promoted = transf.is_promoted; //Put piece promotion status
+            board[move[1].row + capR][move[1].col + capC].is_void = true; //"Remove" the captured piece from the place
+            if(detectCaptureForPiece(board[move[1].row][move[1].col], board)){
+                //For multiple captures, there will be a recursion around here, be it for player or AI
+                printf("lets try second move\n");
+                //Movements moves = generateCapturesForPiece(board,move.back().row,move.back().col);
                 Movement mTry;
                 mTry.push_back(move.back());
                 int row, col;
@@ -645,15 +751,22 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move) {
                 } else {
                     printf("Wrong move, try to capture again"); //How do i go back to the cap again point?
                 }*/
-            } else { //AI time to shine
-                printf("Second move");
-                Movement m = moves.back();
-                executeMove(board, m);
+            } 
+        } else { //IA is on
+            //int capR = (move.front().row - move.back().row)/2;
+            //int capC = (move.front().col - move.back().col)/2;
+            board[move.back().row][move.back().col].is_void = false;//Register piece presence
+            board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
+            board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
+            for(int i = 0; i < move.size() - 1; i++) {
+                int capR = (move[i].row - move[i+1].row)/2;
+                int capC = (move[i].col - move[i+1].col)/2;
+                board[move[i+1].row + capR][move[i+1].col + capC].is_void = true; //"Remove" the captured piece from the place
             }
-        } else { //There is no more capture, try to verify if it can be promoted
-            if((board[move.back().row][move.back().col].is_black && move.back().row == 7) || (!board[move.back().row][move.back().col].is_black && move.back().row == 0) ) {
-                board[move.back().row][move.back().col].is_promoted = true;
-            }
+        }
+        //There is no more capture, try to verify if it can be promoted
+        if((board[move.back().row][move.back().col].is_black && move.back().row == 7) || (!board[move.back().row][move.back().col].is_black && move.back().row == 0) ) {
+            board[move.back().row][move.back().col].is_promoted = true;
         }
         is_capture_possible = false;//Guarantee that there is no capture
     } else {//Execute normal movement
@@ -689,9 +802,10 @@ int evaluateMove(Movement move,Piece board[BOARD_SIZE][BOARD_SIZE]){
 }
 
 // Function to find the best move using the Minimax algorithm with alpha-beta pruning
-Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements moves) {
-    Movement best_move = moves.front();
-    int i = -13;
+Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements moves, bool maxing) {
+    Movement best_move = moves[0];
+    int min = 13;
+    int max = -13;
     bool temp = is_black_turn;
     for(Movement m : moves) {
         // Make a copy of the board
@@ -703,30 +817,52 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements m
         }
         int t = 0;
         if(dept > 0) {
+            maxing = !maxing;
             executeMove(copy, m);
             is_black_turn = !is_black_turn;
             detectCaptureForTurn(copy);
-            Movements newMoves;
             //Get machine movable pieces
             std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, copy);
-            //For each one, generate thi moves
-            if(getAllTurnMovablePieces(board).empty()) {//Can't move anymore
-                if(t > i) {
-                    i = t;
+            printf("pieces empty: %i \n",pieces.empty());
+            if(getAllTurnMovablePieces(board).empty()) {//If you turn this on, some games will have end, some will get segfault
+            //if(pieces.empty()) {//If you turn this on, no game will play sucesfully, some will be on infinite or segfault
+                if(t > max && maxing) {
+                    max = t;
+                    best_move = m;
+                } else if(t < min && !maxing) {
+                    min = t;
                     best_move = m;
                 }
                 return best_move;
             }
+            Movements newMoves;
+            //For each one, generate thi moves
             for (Piece p : pieces) {
                 Movements newM = generateMoves(copy, p.place.row, p.place.col);
+                if(newM.empty()) {
+                    printf("This piece somehow can't move\n");
+                }
                 newMoves.insert(newMoves.end(), newM.begin(), newM.end());
             }
-            t = evaluateMove(findBestMove(copy, dept-1,newMoves), copy);
+            if(newMoves.empty()) {
+                printf("No moves\n");
+            }
+            for (Movement mvm : newMoves) {
+                if(mvm.empty()) {
+                    printf("This fucking thing is void\n");
+                }
+            }
+            Movement toEval = findBestMove(copy, dept-1,newMoves,maxing);
+            t = evaluateMove(toEval, copy);
         } else {
             t = evaluateMove(m, copy);
         }
-        if(t > i) {
-            i = t;
+        maxing = !maxing;
+        if(t > max && maxing) {
+            max = t;
+            best_move = m;
+        } else if(t < min && !maxing) {
+            min = t;
             best_move = m;
         }
     }
@@ -775,21 +911,24 @@ void ai_routine(Piece board[BOARD_SIZE][BOARD_SIZE]) {
         moves.insert(moves.end(), newM.begin(), newM.end());
     }
     //Now chose da best move, mwahahaha
-    int dept = num_pieces-3;
-    Movement best = findBestMove(board, dept, moves);
+    int dept = 2;//(4 + floor((num_pieces-1)/2));
+    Movement best = findBestMove(board, dept, moves, true);
     printf("row-col=%i-%i\n",best.front().row,best.front().col);
     printf("row-col=%i-%i\n",best.back().row,best.back().col);
     executeMove(board, best);
     is_black_turn = !is_black_turn;
+    printf("Changgo turno\n");
     //is_ai_on = false;
 }
 
 int main() {
     Piece board[BOARD_SIZE][BOARD_SIZE];
-    //1689366332 -- Seed with segmentation fault- it gives invalid Piece selected, try another
+    //-452697952 -- Seed with infinite game
     //The problem may be related to the white king, since it can capture, but maybe failed
     //To recognize this capture, or better yet, to execute it
-    srand (/*1689366332*/time(NULL)); //Initialize with random seed every start
+    srand (time(NULL)); //Initialize with random seed every start
+    printf("Seed gen %d\n",srand);
+    //srand (-452697952); //Initialize with error seed
     initializeBoard(board);
     printBoard(board);
     is_black_turn = true;
@@ -807,15 +946,15 @@ int main() {
                 pW++;
             }
             break;
+        } else {
+            if(!is_ai_on) {
+                player_routine(board);
+            } else { //It is machine time
+                ai_routine(board);
+            }
+            detectCaptureForTurn(board);
+            printBoard(board);
         }
-        if(!is_ai_on) {
-            player_routine(board);
-        } else { //It is machine time
-            ai_routine(board);
-        }
-        detectCaptureForTurn(board);
-        printBoard(board);
     }
-    printBoard(board);
     return 0;
 }
