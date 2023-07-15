@@ -807,6 +807,7 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements m
     int min = 13;
     int max = -13;
     bool temp = is_black_turn;
+    //bool temp2 = is_capture_possible;
     for(Movement m : moves) {
         // Make a copy of the board
         Piece copy[BOARD_SIZE][BOARD_SIZE];
@@ -824,8 +825,8 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements m
             //Get machine movable pieces
             std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, copy);
             printf("pieces empty: %i \n",pieces.empty());
-            if(getAllTurnMovablePieces(board).empty()) {//If you turn this on, some games will have end, some will get segfault
-            //if(pieces.empty()) {//If you turn this on, no game will play sucesfully, some will be on infinite or segfault
+            //if(getAllTurnMovablePieces(copy).empty()) {//If you turn this on, some games will have end, some will get segfault
+            if(pieces.empty()) {//If you turn this on, no game will play sucesfully, some will be on infinite or segfault
                 if(t > max && maxing) {
                     max = t;
                     best_move = m;
@@ -867,6 +868,7 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements m
         }
     }
     is_black_turn = temp;
+    //is_capture_possible = temp2;
     return best_move; //For now, get the first for testing porpuses
 }
 
@@ -926,9 +928,9 @@ int main() {
     //-452697952 -- Seed with infinite game
     //The problem may be related to the white king, since it can capture, but maybe failed
     //To recognize this capture, or better yet, to execute it
-    srand (time(NULL)); //Initialize with random seed every start
-    printf("Seed gen %d\n",srand);
-    //srand (-452697952); //Initialize with error seed
+    //srand (time(NULL)); //Initialize with random seed every start
+    //printf("Seed gen %d\n",srand);
+    srand (-452697952); //Initialize with error seed
     initializeBoard(board);
     printBoard(board);
     is_black_turn = true;
