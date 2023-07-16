@@ -739,8 +739,6 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move, bool is_cap
                 }*/
             } 
         } else { //IA is on
-            //int capR = (move.front().row - move.back().row)/2;
-            //int capC = (move.front().col - move.back().col)/2;
             board[move.back().row][move.back().col].is_void = false;//Register piece presence
             board[move.back().row][move.back().col].is_black = transf.is_black; //Put piece color
             board[move.back().row][move.back().col].is_promoted = transf.is_promoted; //Put piece promotion status
@@ -821,19 +819,7 @@ Movement findBestMove(Piece board[BOARD_SIZE][BOARD_SIZE], int dept, Movements m
             //For each one, generate thi moves
             for (Piece p : pieces) {
                 Movements newM = generateMoves(copy, p.place.row, p.place.col, is_black_turn, is_capture_possible);
-                if(newM.empty()) {
-                    printf("This piece somehow can't move\n");
-                    printf("r-c %i %i \n", p.place.row, p.place.col);
-                }
                 newMoves.insert(newMoves.end(), newM.begin(), newM.end());
-            }
-            if(newMoves.empty()) {
-                printf("No moves\n");
-            }
-            for (Movement mvm : newMoves) {
-                if(mvm.empty()) {
-                    printf("This fucking thing is void\n");
-                }
             }
             Movement toEval = findBestMove(copy, dept-1,newMoves,!maxing, is_black_turn, is_capture_possible);
             t = evaluateMove(toEval, copy, is_capture_possible);
@@ -889,15 +875,7 @@ void ai_routine(Piece board[BOARD_SIZE][BOARD_SIZE], bool is_black_turn, bool is
     //Get machine movable pieces
     std::vector<Piece> pieces = getXRandomTurnMovablePieces(num_pieces, board, is_black_turn, is_capture_possible);
     //For each one, generate thi moves
-    if(pieces.empty()) {
-        printf("Sore looser?\n");
-        printBoard(board);
-        printf("wath can i do\n");
-        is_game_on = false;
-        exit(-1);
-    }
     for (Piece p : pieces) {
-        //printf("Tryna p at row-col=%i-%i\n",p.place.row, p.place.col);
         Movements newM = generateMoves(board, p.place.row, p.place.col, is_black_turn, is_capture_possible);
         moves.insert(moves.end(), newM.begin(), newM.end());
     }
@@ -910,8 +888,6 @@ void ai_routine(Piece board[BOARD_SIZE][BOARD_SIZE], bool is_black_turn, bool is
 
 int main() {
     Piece board[BOARD_SIZE][BOARD_SIZE];
-    //The problem may be related to the white king, since it can capture, but maybe failed
-    //To recognize this capture, or better yet, to execute it
     int rseed = time(NULL);
     srand (rseed); //Initialize with random seed every start
     initializeBoard(board);
