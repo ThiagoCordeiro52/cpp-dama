@@ -3,7 +3,6 @@
 #include <vector>
 #include <stdlib.h>
 #include <time.h>
-#include <algorithm>
 #include <cmath>
 
 #define BOARD_SIZE 8
@@ -708,6 +707,15 @@ Movements generateMoves(Piece board[BOARD_SIZE][BOARD_SIZE], int row, int col, b
     return moves;
 }
 
+bool isMoveThere (Movement move, Movements moves) {
+    for(Movement m : moves) {
+        if(m[0] == move[0] && m[1] == move[1]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move, bool is_capture_possible) {
     if(is_capture_possible) {//Execute capture movement
         Piece transf = board[move.front().row][move.front().col]; //Get piece to move
@@ -720,23 +728,28 @@ void executeMove(Piece board[BOARD_SIZE][BOARD_SIZE], Movement move, bool is_cap
             board[move[1].row][move[1].col].is_promoted = transf.is_promoted; //Put piece promotion status
             board[move[1].row + capR][move[1].col + capC].is_void = true; //"Remove" the captured piece from the place
             if(detectCaptureForPiece(board[move[1].row][move[1].col], board)){
+            	bool capOn = true;
+                while(capOn) {
                 //For multiple captures, there will be a recursion around here, be it for player or AI
-                printf("lets try second move\n");
-                //Movements moves = generateCapturesForPiece(board,move.back().row,move.back().col);
-                Movement mTry;
-                mTry.push_back(move.back());
-                int row, col;
-                printf("Insert row-col for movement:");
-                scanf("%d",&row); //Hard-coded
-                scanf("%d",&col); //Hard-coded
-                printf("\n");
-                mTry.push_back(init_coord(row, col));
-                executeMove(board, mTry, is_capture_possible);
-                /*if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
-                    executeMove(board, mTry);
-                } else {
-                    printf("Wrong move, try to capture again"); //How do i go back to the cap again point?
-                }*/
+		            printf("lets try second move\n");
+		            //Movements moves = generateCapturesForPiece(board,move.back().row,move.back().col);
+		            Movement mTry;
+		            mTry.push_back(move[1]);
+		            int row, col;
+		            printf("Insert row-col for movement:");
+		            scanf("%d",&row); //Hard-coded
+		            scanf("%d",&col); //Hard-coded
+		            printf("\n");
+		            mTry.push_back(init_coord(row, col));
+		            Movements moves = generateCapturesForPiece(board[move[1].row][move[1].col],board);
+		            //executeMove(board, mTry, is_capture_possible);
+		            if(isMoveThere(mTry,moves)) { //There is such moviment in valids
+		                capOn = false;
+		                executeMove(board, mTry, is_capture_possible);
+		            } else {
+		                printf("Wrong move, try to capture again");
+		            }
+                }
             } 
         } else { //IA is on
             board[move.back().row][move.back().col].is_void = false;//Register piece presence
@@ -851,6 +864,7 @@ bool player_routine(Piece board[BOARD_SIZE][BOARD_SIZE], bool is_black_turn, boo
     Movements moves = generateMoves(board, row, col, is_black_turn, is_capture_possible);
     if(moves.empty()) {
         printf("Invalid piece, select another\n");
+        is_black_turn = player_routine(board, is_black_turn, is_capture_possible);
     } else {
         Movement mTry;
         mTry.push_back(init_coord(row, col));
@@ -859,7 +873,7 @@ bool player_routine(Piece board[BOARD_SIZE][BOARD_SIZE], bool is_black_turn, boo
         scanf("%d",&col); //Hard-coded
         printf("\n");
         mTry.push_back(init_coord(row, col));
-        if(std::count(moves.begin(), moves.end(), mTry)) { //There is such moviment in valids?
+        if(isMoveThere(mTry,moves)) { //There is such moviment in valids?
             executeMove(board, mTry, is_capture_possible);
             is_ai_on = true;
             return !is_black_turn;
